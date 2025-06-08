@@ -1144,14 +1144,24 @@ static int panthor_ioctl_vm_bind_async(struct drm_device *ddev,
 		goto out_cleanup_submit_ctx;
 
 	/* Prepare reservation objects for each VM_BIND job. */
-	drm_exec_until_all_locked(&ctx.exec) {
+	while (1) {
+		drm_exec_cleanup(&ctx.exec);
+
 		for (u32 i = 0; i < ctx.job_count; i++) {
 			ret = panthor_vm_bind_job_prepare_resvs(&ctx.exec, ctx.jobs[i].job);
-			drm_exec_retry_on_contention(&ctx.exec);
+			if (drm_exec_is_contended(&ctx.exec))
+				goto retry_loop;
+
 			if (ret)
 				goto out_cleanup_submit_ctx;
 		}
+
+		break;
+
+		retry_loop:
+		    ;
 	}
+
 
 	ret = panthor_submit_ctx_add_deps_and_arm_jobs(&ctx);
 	if (ret)

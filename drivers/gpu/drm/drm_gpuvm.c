@@ -1252,24 +1252,32 @@ drm_gpuvm_exec_lock(struct drm_gpuvm_exec *vm_exec)
 
 	drm_exec_init(exec, vm_exec->flags, 0);
 
-	drm_exec_until_all_locked(exec) {
+	while (1) {
+		drm_exec_cleanup(exec);
+
 		ret = drm_gpuvm_prepare_vm(gpuvm, exec, num_fences);
-		drm_exec_retry_on_contention(exec);
+		if (drm_exec_is_contended(exec))
+			continue;
 		if (ret)
 			goto err;
 
 		ret = drm_gpuvm_prepare_objects(gpuvm, exec, num_fences);
-		drm_exec_retry_on_contention(exec);
+		if (drm_exec_is_contended(exec))
+			continue;
 		if (ret)
 			goto err;
 
 		if (vm_exec->extra.fn) {
 			ret = vm_exec->extra.fn(vm_exec);
-			drm_exec_retry_on_contention(exec);
+			if (drm_exec_is_contended(exec))
+				continue;
 			if (ret)
 				goto err;
 		}
+
+		break;
 	}
+
 
 	return 0;
 
@@ -1343,12 +1351,16 @@ drm_gpuvm_exec_lock_range(struct drm_gpuvm_exec *vm_exec,
 
 	drm_exec_init(exec, vm_exec->flags, 0);
 
-	drm_exec_until_all_locked(exec) {
-		ret = drm_gpuvm_prepare_range(gpuvm, exec, addr, range,
-					      vm_exec->num_fences);
-		drm_exec_retry_on_contention(exec);
+	while (1) {
+		drm_exec_cleanup(exec);
+
+		ret = drm_gpuvm_prepare_range(gpuvm, exec, addr, range, vm_exec->num_fences);
+		if (drm_exec_is_contended(exec))
+			continue;
 		if (ret)
 			goto err;
+
+		break;
 	}
 
 	return ret;
