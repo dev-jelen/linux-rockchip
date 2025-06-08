@@ -299,8 +299,7 @@ dtbo-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3568-uart8-m1.dtbo \
 	rk3568-uart9-m1.dtbo \
 	rk3568-w1-gpio3-a5.dtbo \
-	rk3568-w1-gpio3-d1.dtbo \
-	rk3588s-mali.dtbo
+	rk3568-w1-gpio3-d1.dtbo
 
 
 dtbotxt-$(CONFIG_ARCH_ROCKCHIP) += \
